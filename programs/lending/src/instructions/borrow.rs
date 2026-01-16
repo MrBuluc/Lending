@@ -2,7 +2,7 @@ use std::f32::consts::E;
 
 use anchor_lang::prelude::*;
 use anchor_spl::{associated_token::AssociatedToken, token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked}};
-use pyth_solana_receiver_sdk::price_update::{PriceUpdateV2, get_feed_id_from_hex};
+use crate::pyth_config::{PriceUpdateV2, get_feed_id_from_hex};
 
 use crate::{constants::{MAXIMUM_AGE, SOL_USD_FEED_ID, USDC_USD_FEED_ID}, state::{Bank, User}};
 use crate::error::ErrorCode;
@@ -14,7 +14,7 @@ pub struct Borrow<'info> {
 
     pub mint: InterfaceAccount<'info, Mint>,
 
-    #[account(mut, seeds = [mint_key().as_ref()], bump)]
+    #[account(mut, seeds = [mint.key().as_ref()], bump)]
     pub bank: Account<'info, Bank>,
 
     #[account(mut, seeds = [b"treasury", mint.key().as_ref()], bump)]
@@ -107,10 +107,12 @@ pub fn process_borrow(ctx: Context<Borrow>, amount: u64) -> Result<()> {
         }
     }
 
+    user.last_updated_borrowed = Clock::get()?.unix_timestamp;
+
     Ok(())
 }
 
-fn calculate_accrued_interest(deposited: u64, interest_rate: u64, last_updated: i64) -> Result<u64> {
+pub fn calculate_accrued_interest(deposited: u64, interest_rate: u64, last_updated: i64) -> Result<u64> {
     let current_time = Clock::get()?.unix_timestamp;
     let time_diff = current_time - last_updated;
     let new_value = (deposited as f64 * E.powf(interest_rate as f32 * time_diff as f32) as f64) as u64;

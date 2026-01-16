@@ -4,6 +4,7 @@ use instructions::*;
 mod constants;
 mod error;
 mod instructions;
+mod pyth_config;
 mod state;
 
 declare_id!("65JX6tyBwpGPxSnKCWyncAr8xFS2nDmA5mfmAAoqut8J");
@@ -34,5 +35,13 @@ pub mod lending {
 
     pub fn borrow(ctx: Context<Borrow>, amount: u64) -> Result<()> {
         process_borrow(ctx, amount)
+    }
+
+    pub fn repay(ctx: Context<Repay>, amount: u64) -> Result<()> {
+        process_repay(ctx, amount)
+    }
+
+    pub fn liquidate(ctx: Context<Liquidate>) -> Result<()> {
+        process_liquidate(ctx)
     }
 }

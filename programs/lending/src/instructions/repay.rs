@@ -1,3 +1,5 @@
+use std::f32::consts::E;
+
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -23,7 +25,7 @@ pub struct Repay<'info> {
     #[account(mut, seeds = [signer.key().as_ref()], bump)]
     pub user_account: Account<'info, User>,
 
-    #[account(mut, associated_token::mint = mint, associated_token::authority = signer, associated_token::token_program = token_program)]
+    #[account(init_if_needed, payer = signer, associated_token::mint = mint, associated_token::authority = signer, associated_token::token_program = token_program)]
     pub user_token_account: InterfaceAccount<'info, TokenAccount>,
 
     pub token_program: Interface<'info, TokenInterface>,
@@ -67,6 +69,34 @@ pub fn process_repay(ctx: Context<Repay>, amount: u64) -> Result<()> {
         authority: ctx.accounts.signer.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
     };
+
+    let cpi_program = ctx.accounts.token_program.to_account_info();
+
+    let cpi_ctx = CpiContext::new(cpi_program, transfer_cpi_accounts);
+
+    let decimals = ctx.accounts.mint.decimals;
+
+    token_interface::transfer_checked(cpi_ctx, amount, decimals)?;
+
+    let borrow_ratio = amount.checked_div(bank.total_borrowed).unwrap();
+    let user_shares = bank
+        .total_borrowed_shares
+        .checked_mul(borrow_ratio)
+        .unwrap();
+
+    match ctx.accounts.mint.to_account_info().key() {
+        key if key == user.usdc_address => {
+            user.borrowed_usdc -= amount;
+            user.borrowed_usdc_shares -= user_shares;
+        }
+        _ => {
+            user.borrowed_sol -= amount;
+            user.borrowed_sol_shares -= user_shares
+        }
+    }
+
+    bank.total_borrowed -= amount;
+    bank.total_borrowed_shares -= user_shares;
 
     Ok(())
 }

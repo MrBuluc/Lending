@@ -13,5 +13,5 @@ pub enum ErrorCode {
     #[msg("Attempting to borrow more than allowed.")]
     OverBorrowableAmount,
     #[msg("User is not undercollateralized.")]
-    NotUndercollateralized,
+    NotUnderCollateralized,
 }
