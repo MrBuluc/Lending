@@ -77,15 +77,15 @@ pub struct PriceUpdateV2 {
 }
 
 impl Discriminator for PriceUpdateV2 {
-    const DISCRIMINATOR: [u8; 8] = [114, 25, 203, 90, 240, 237, 246, 222];
+    const DISCRIMINATOR: [u8; 8] = [34, 241, 35, 99, 157, 126, 244, 205];
 }
 
 impl Owner for PriceUpdateV2 {
     fn owner() -> Pubkey {
-        // Pyth Receiver Program ID: 7UVimBoxocRv6tYt3Suve93S2h76SJA88Vqd5iEPR6p8
+        // Pyth Receiver Program ID: rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ
         let bytes = [
-            96, 172, 102, 194, 250, 151, 163, 105, 175, 126, 8, 236, 194, 224, 185, 218, 36, 173,
-            2, 85, 41, 233, 101, 14, 52, 224, 137, 24, 218, 226, 142, 235,
+            12, 183, 250, 187, 82, 247, 166, 72, 187, 91, 49, 125, 154, 1, 139, 144, 87, 203, 2,
+            71, 116, 250, 254, 1, 230, 196, 223, 152, 204, 56, 88, 129,
         ];
         Pubkey::new_from_array(bytes)
     }

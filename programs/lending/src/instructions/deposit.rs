@@ -47,32 +47,30 @@ pub fn process_deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
 
     let bank = &mut ctx.accounts.bank;
 
+    let user_shares: u64;
     if bank.total_deposits == 0 {
+        user_shares = amount;
         bank.total_deposits = amount;
         bank.total_deposit_shares = amount;
+    } else {
+        user_shares = (amount as u128 * bank.total_deposit_shares as u128
+            / bank.total_deposits as u128) as u64;
+        bank.total_deposits += amount;
+        bank.total_deposit_shares += user_shares;
     }
-
-    let deposit_ratio = amount.checked_div(bank.total_deposits).unwrap();
-    let user_shares = bank
-        .total_deposit_shares
-        .checked_mul(deposit_ratio)
-        .unwrap();
 
     let user = &mut ctx.accounts.user_account;
 
     match ctx.accounts.mint.to_account_info().key() {
         key if key == user.usdc_address => {
             user.deposited_usdc += amount;
-            user.depoisted_usdc_shares += user_shares;
+            user.deposited_usdc_shares += user_shares;
         }
         _ => {
-            user.depoisited_sol += amount;
+            user.deposited_sol += amount;
             user.deposited_sol_shares += user_shares;
         }
     }
-
-    bank.total_deposits += amount;
-    bank.total_deposit_shares += user_shares;
 
     user.last_updated = Clock::get()?.unix_timestamp;
 

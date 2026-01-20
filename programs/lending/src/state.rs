@@ -4,12 +4,12 @@ use anchor_lang::prelude::*;
 #[derive(InitSpace)]
 pub struct User {
     pub owner: Pubkey,
-    pub depoisited_sol: u64,
+    pub deposited_sol: u64,
     pub deposited_sol_shares: u64,
     pub borrowed_sol: u64,
     pub borrowed_sol_shares: u64,
     pub deposited_usdc: u64,
-    pub depoisted_usdc_shares: u64,
+    pub deposited_usdc_shares: u64,
     pub borrowed_usdc: u64,
     pub borrowed_usdc_shares: u64,
     pub usdc_address: Pubkey,

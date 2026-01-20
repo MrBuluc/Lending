@@ -41,7 +41,7 @@ pub fn process_init_bank(
     bank.authority = ctx.accounts.signer.key();
     bank.liquidation_threshold = liquidation_threshold;
     bank.max_ltv = max_ltv;
-    bank.interest_rate = 0.05 as u64;
+    bank.interest_rate = 5; // 5% represented as integer to avoid cast issues for now
 
     Ok(())
 }
@@ -50,6 +50,9 @@ pub fn process_init_user(ctx: Context<InitUser>, usdc_address: Pubkey) -> Result
     let user_account: &mut Account<'_, User> = &mut ctx.accounts.user_account;
     user_account.owner = ctx.accounts.signer.key();
     user_account.usdc_address = usdc_address;
+
+    let now = Clock::get()?.unix_timestamp;
+    user_account.last_updated = now;
 
     Ok(())
 }

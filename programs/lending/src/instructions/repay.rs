@@ -47,19 +47,18 @@ pub fn process_repay(ctx: Context<Repay>, amount: u64) -> Result<()> {
         }
     }
 
-    let time_diff = user.last_updated_borrowed - Clock::get()?.unix_timestamp;
+    let time_diff = Clock::get()?.unix_timestamp - user.last_updated_borrowed;
 
     let bank = &mut ctx.accounts.bank;
 
-    bank.total_borrowed -= (bank.total_borrowed as f64
-        * E.powf(bank.interest_rate as f32 * time_diff as f32) as f64)
+    bank.total_borrowed = (bank.total_borrowed as f64
+        * (1.0 + (bank.interest_rate as f64 * (time_diff as f64 / 31536000.0))))
         as u64;
 
-    let value_per_share = bank.total_borrowed as f64 / bank.total_borrowed_shares as f64;
+    let user_value =
+        (borrow_value as f64 / bank.total_borrowed_shares as f64) * bank.total_borrowed as f64;
 
-    let user_value = borrow_value / value_per_share as u64;
-
-    if amount > user_value {
+    if amount > user_value as u64 {
         return Err(ErrorCode::OverRepay.into());
     }
 
@@ -78,11 +77,8 @@ pub fn process_repay(ctx: Context<Repay>, amount: u64) -> Result<()> {
 
     token_interface::transfer_checked(cpi_ctx, amount, decimals)?;
 
-    let borrow_ratio = amount.checked_div(bank.total_borrowed).unwrap();
-    let user_shares = bank
-        .total_borrowed_shares
-        .checked_mul(borrow_ratio)
-        .unwrap();
+    let user_shares =
+        (amount as u128 * bank.total_borrowed_shares as u128 / bank.total_borrowed as u128) as u64;
 
     match ctx.accounts.mint.to_account_info().key() {
         key if key == user.usdc_address => {

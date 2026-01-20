@@ -43,26 +43,26 @@ pub fn process_borrow(ctx: Context<Borrow>, amount: u64) -> Result<()> {
 
     let price_update = &mut ctx.accounts.price_update;
 
-    let total_collateral: u64;
+    let total_collateral: u128;
 
     match ctx.accounts.mint.to_account_info().key() {
         key if key == user.usdc_address => {
             let sol_feed_id = get_feed_id_from_hex(SOL_USD_FEED_ID)?;
             let sol_price = price_update.get_price_no_older_than(&Clock::get()?, MAXIMUM_AGE, &sol_feed_id)?;
-            let new_value = calculate_accrued_interest(user.depoisited_sol, bank.interest_rate, user.last_updated)?;
-            total_collateral = sol_price.price as u64 * new_value;
+            let new_value = calculate_accrued_interest(user.deposited_sol, bank.interest_rate, user.last_updated)?;
+            total_collateral = sol_price.price as u128 * new_value as u128;
         }
         _ => {
             let usdc_feed_id = get_feed_id_from_hex(USDC_USD_FEED_ID)?;
             let usdc_price = price_update.get_price_no_older_than(&Clock::get()?, MAXIMUM_AGE, &usdc_feed_id)?;
             let new_value = calculate_accrued_interest(user.deposited_usdc, bank.interest_rate, user.last_updated)?;
-            total_collateral = usdc_price.price as u64 * new_value;
+            total_collateral = usdc_price.price as u128 * new_value as u128;
         }
     }
 
-    let borrowable_amount = total_collateral.checked_mul(bank.liquidation_threshold).unwrap();
+    let borrowable_amount = total_collateral.checked_mul(bank.liquidation_threshold as u128).unwrap();
 
-    if borrowable_amount < amount {
+    if borrowable_amount < amount as u128 {
         return Err(ErrorCode::OverBorrowableAmount.into());
     }
 
@@ -93,8 +93,7 @@ pub fn process_borrow(ctx: Context<Borrow>, amount: u64) -> Result<()> {
         bank.total_borrowed_shares = amount;
     }
 
-    let borrow_ratio = amount.checked_div(bank.total_borrowed).unwrap();
-    let user_shares = bank.total_borrowed_shares.checked_mul(borrow_ratio).unwrap();
+    let user_shares = (amount as u128 * bank.total_borrowed_shares as u128 / bank.total_borrowed as u128) as u64;
 
     match ctx.accounts.mint.to_account_info().key() {
         key if key == user.usdc_address => {
